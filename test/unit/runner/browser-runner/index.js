@@ -6,6 +6,7 @@ const BrowserRunner = require('lib/runner/browser-runner');
 const BrowserAgent = require('lib/runner/browser-runner/browser-agent');
 const SuiteRunner = require('lib/runner/suite-runner/suite-runner');
 const suiteRunnerFabric = require('lib/runner/suite-runner');
+const createSuite = require('lib/suite').create;
 const BasicPool = require('lib/browser-pool/basic-pool');
 const Config = require('lib/config');
 const SuiteCollection = require('lib/suite-collection');
@@ -118,34 +119,19 @@ describe('runner/BrowserRunner', () => {
                 });
         });
 
-        describe('add metaInfo to suite', () => {
-            it('should not modify suite if "url" in "metaInfo" is already exists', () => {
+        describe('add "fullUrl" to suite', () => {
+            it('should not modify suite without "url" as own property', () => {
                 const config = {browser: {rootUrl: 'http://localhost/foo/bar/'}};
-                const someSuite = makeSuiteStub({browsers: ['browser'], url: 'testUrl'});
-                someSuite.metaInfo = {url: 'testUrl'};
-                const suiteCollection = new SuiteCollection([someSuite]);
+                const parentSuite = makeSuiteStub({browsers: ['browser']});
+                const childSuite = createSuite('child', parentSuite);
+                const suiteCollection = new SuiteCollection([childSuite]);
 
                 const runner = mkRunner_('browser', config);
 
                 return runner.run(suiteCollection)
                     .then(() => {
                         const suite = suiteRunnerFabric.create.args[0][0];
-                        assert.equal(suite.metaInfo.url, 'testUrl');
-                    });
-            });
-
-            it('should modify suite if "url" not exists in "metaInfo"', () => {
-                const config = {browser: {rootUrl: 'http://localhost/foo/bar/'}};
-                const someSuite = makeSuiteStub({browsers: ['browser'], url: 'testUrl'});
-                someSuite.metaInfo = {};
-                const suiteCollection = new SuiteCollection([someSuite]);
-
-                const runner = mkRunner_('browser', config);
-
-                return runner.run(suiteCollection)
-                    .then(() => {
-                        const suite = suiteRunnerFabric.create.args[0][0];
-                        assert.isDefined(suite.metaInfo.url);
+                        assert.isUndefined(suite.fullUrl);
                     });
             });
 
@@ -159,7 +145,7 @@ describe('runner/BrowserRunner', () => {
                 return runner.run(suiteCollection)
                     .then(() => {
                         const suite = suiteRunnerFabric.create.args[0][0];
-                        assert.equal(suite.metaInfo.url, '/foo/bar/testUrl');
+                        assert.equal(suite.fullUrl, '/foo/bar/testUrl');
                     });
             });
 
@@ -173,7 +159,7 @@ describe('runner/BrowserRunner', () => {
                 return runner.run(suiteCollection)
                     .then(() => {
                         const suite = suiteRunnerFabric.create.args[0][0];
-                        assert.equal(suite.metaInfo.url, '/foo/baz/testUrl');
+                        assert.equal(suite.fullUrl, '/foo/baz/testUrl');
                     });
             });
 
@@ -187,7 +173,7 @@ describe('runner/BrowserRunner', () => {
                 return runner.run(suiteCollection)
                     .then(() => {
                         const suite = suiteRunnerFabric.create.args[0][0];
-                        assert.equal(suite.metaInfo.url, '/foo/qux/testUrl');
+                        assert.equal(suite.fullUrl, '/foo/qux/testUrl');
                     });
             });
 
@@ -201,7 +187,7 @@ describe('runner/BrowserRunner', () => {
                 return runner.run(suiteCollection)
                     .then(() => {
                         const suite = suiteRunnerFabric.create.args[0][0];
-                        assert.equal(suite.metaInfo.url, '/foo/bat/testUrl');
+                        assert.equal(suite.fullUrl, '/foo/bat/testUrl');
                     });
             });
         });
