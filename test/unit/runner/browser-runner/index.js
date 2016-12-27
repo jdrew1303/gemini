@@ -120,6 +120,22 @@ describe('runner/BrowserRunner', () => {
         });
 
         describe('add "fullUrl" to suite', () => {
+            const run_ = (opts) => {
+                _.defaults(opts || {}, {
+                    browser: 'browser',
+                    rootUrl: 'http://default/url',
+                    suiteUrl: 'default-path'
+                });
+
+                const config = {[opts.browser]: {rootUrl: opts.rootUrl}};
+                const someSuite = makeSuiteStub({browsers: [opts.browser], url: opts.suiteUrl});
+                const suiteCollection = new SuiteCollection([someSuite]);
+
+                const runner = mkRunner_(opts.browser, config);
+
+                return runner.run(suiteCollection);
+            };
+
             it('should not modify suite without "url" as own property', () => {
                 const config = {browser: {rootUrl: 'http://localhost/foo/bar/'}};
                 const parentSuite = makeSuiteStub({browsers: ['browser']});
@@ -136,13 +152,7 @@ describe('runner/BrowserRunner', () => {
             });
 
             it('should concatenate rootUrl and suiteUrl', () => {
-                const config = {browser: {rootUrl: 'http://localhost/foo/bar/'}};
-                const someSuite = makeSuiteStub({browsers: ['browser'], url: 'testUrl'});
-                const suiteCollection = new SuiteCollection([someSuite]);
-
-                const runner = mkRunner_('browser', config);
-
-                return runner.run(suiteCollection)
+                return run_({rootUrl: 'http://localhost/foo/bar/', suiteUrl: 'testUrl'})
                     .then(() => {
                         const suite = suiteRunnerFabric.create.args[0][0];
                         assert.equal(suite.fullUrl, '/foo/bar/testUrl');
@@ -150,13 +160,7 @@ describe('runner/BrowserRunner', () => {
             });
 
             it('should concatenate with slash between rootUrl and suiteUrl', () => {
-                const config = {browser: {rootUrl: 'http://localhost/foo/baz'}};
-                const someSuite = makeSuiteStub({browsers: ['browser'], url: 'testUrl'});
-                const suiteCollection = new SuiteCollection([someSuite]);
-
-                const runner = mkRunner_('browser', config);
-
-                return runner.run(suiteCollection)
+                return run_({rootUrl: 'http://localhost/foo/baz', suiteUrl: 'testUrl'})
                     .then(() => {
                         const suite = suiteRunnerFabric.create.args[0][0];
                         assert.equal(suite.fullUrl, '/foo/baz/testUrl');
@@ -164,13 +168,7 @@ describe('runner/BrowserRunner', () => {
             });
 
             it('should remove consecutive slashes', () => {
-                const config = {browser: {rootUrl: 'http://localhost/foo/qux/'}};
-                const someSuite = makeSuiteStub({browsers: ['browser'], url: '/testUrl'});
-                const suiteCollection = new SuiteCollection([someSuite]);
-
-                const runner = mkRunner_('browser', config);
-
-                return runner.run(suiteCollection)
+                return run_({rootUrl: 'http://localhost/foo/qux/', suiteUrl: '/testUrl'})
                     .then(() => {
                         const suite = suiteRunnerFabric.create.args[0][0];
                         assert.equal(suite.fullUrl, '/foo/qux/testUrl');
@@ -178,13 +176,7 @@ describe('runner/BrowserRunner', () => {
             });
 
             it('should cut latest slashes from url', () => {
-                const config = {browser: {rootUrl: 'http://localhost/foo/bat/'}};
-                const someSuite = makeSuiteStub({browsers: ['browser'], url: 'testUrl//'});
-                const suiteCollection = new SuiteCollection([someSuite]);
-
-                const runner = mkRunner_('browser', config);
-
-                return runner.run(suiteCollection)
+                return run_({rootUrl: 'http://localhost/foo/bat/', suiteUrl: 'testUrl//'})
                     .then(() => {
                         const suite = suiteRunnerFabric.create.args[0][0];
                         assert.equal(suite.fullUrl, '/foo/bat/testUrl');
