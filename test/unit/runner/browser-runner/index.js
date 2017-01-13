@@ -120,67 +120,53 @@ describe('runner/BrowserRunner', () => {
         });
 
         describe('add "fullUrl" to suite', () => {
+            const makeChildSuiteStub = (browsers) => {
+                const parentSuite = makeSuiteStub(browsers);
+                return createSuite('child', parentSuite);
+            };
+
             const run_ = (opts) => {
                 _.defaults(opts || {}, {
                     browser: 'browser',
-                    rootUrl: 'http://default/url',
-                    suiteUrl: 'default-path'
+                    rootUrl: 'http://default/url'
                 });
 
                 const config = {[opts.browser]: {rootUrl: opts.rootUrl}};
-                const someSuite = makeSuiteStub({browsers: [opts.browser], url: opts.suiteUrl});
-                const suiteCollection = new SuiteCollection([someSuite]);
 
+                const someSuite = opts.suiteUrl
+                    ? makeSuiteStub({browsers: [opts.browser], url: opts.suiteUrl})
+                    : makeChildSuiteStub({browsers: [opts.browser]});
+
+                const suiteCollection = new SuiteCollection([someSuite]);
                 const runner = mkRunner_(opts.browser, config);
 
-                return runner.run(suiteCollection);
+                return runner.run(suiteCollection)
+                    .then(() => suiteRunnerFabric.create.args[0][0]); // resolve with modified suite
             };
 
             it('should not modify suite without "url" as own property', () => {
-                const config = {browser: {rootUrl: 'http://localhost/foo/bar/'}};
-                const parentSuite = makeSuiteStub({browsers: ['browser']});
-                const childSuite = createSuite('child', parentSuite);
-                const suiteCollection = new SuiteCollection([childSuite]);
-
-                const runner = mkRunner_('browser', config);
-
-                return runner.run(suiteCollection)
-                    .then(() => {
-                        const suite = suiteRunnerFabric.create.args[0][0];
-                        assert.isUndefined(suite.fullUrl);
-                    });
+                return run_({rootUrl: 'http://localhost/foo/bar/'})
+                    .then((suite) => assert.isUndefined(suite.fullUrl));
             });
 
             it('should concatenate rootUrl and suiteUrl', () => {
                 return run_({rootUrl: 'http://localhost/foo/bar/', suiteUrl: 'testUrl'})
-                    .then(() => {
-                        const suite = suiteRunnerFabric.create.args[0][0];
-                        assert.equal(suite.fullUrl, '/foo/bar/testUrl');
-                    });
+                    .then((suite) => assert.equal(suite.fullUrl, '/foo/bar/testUrl'));
             });
 
             it('should concatenate with slash between rootUrl and suiteUrl', () => {
                 return run_({rootUrl: 'http://localhost/foo/baz', suiteUrl: 'testUrl'})
-                    .then(() => {
-                        const suite = suiteRunnerFabric.create.args[0][0];
-                        assert.equal(suite.fullUrl, '/foo/baz/testUrl');
-                    });
+                    .then((suite) => assert.equal(suite.fullUrl, '/foo/baz/testUrl'));
             });
 
             it('should remove consecutive slashes', () => {
                 return run_({rootUrl: 'http://localhost/foo/qux/', suiteUrl: '/testUrl'})
-                    .then(() => {
-                        const suite = suiteRunnerFabric.create.args[0][0];
-                        assert.equal(suite.fullUrl, '/foo/qux/testUrl');
-                    });
+                    .then((suite) => assert.equal(suite.fullUrl, '/foo/qux/testUrl'));
             });
 
             it('should cut latest slashes from url', () => {
                 return run_({rootUrl: 'http://localhost/foo/bat/', suiteUrl: 'testUrl//'})
-                    .then(() => {
-                        const suite = suiteRunnerFabric.create.args[0][0];
-                        assert.equal(suite.fullUrl, '/foo/bat/testUrl');
-                    });
+                    .then((suite) => assert.equal(suite.fullUrl, '/foo/bat/testUrl'));
             });
         });
     });

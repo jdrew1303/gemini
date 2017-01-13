@@ -42,11 +42,11 @@ describe('ViewModel', () => {
         const model = mkViewModel_();
 
         model.addSuccess(stubTest_({
-            suite: {fullUrl: 'test/url'}
+            suite: {fullUrl: '/test/url'}
         }));
 
         const metaInfo = JSON.parse(getModelResult_(model).metaInfo);
 
-        assert.equal(metaInfo.url, 'test/url');
+        assert.equal(metaInfo.url, '/test/url');
     });
 });
